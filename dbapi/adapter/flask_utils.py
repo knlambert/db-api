@@ -68,7 +68,7 @@ LANGUAGE_SCHEMA = {
 }
 
 
-def flask_check_args(validation_schema):
+def flask_check_and_inject_args(validation_schema):
     """
 
     Args:

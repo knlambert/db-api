@@ -10,22 +10,20 @@ from .utils import json_to_one_level
 from .api_exception import ApiForbidden, ApiUnauthorized, ApiNotFound
 
 
-class Api(object):
+class DBApi(object):
     """
     This class implement a base API. Others are inherited from this one.
     It brings a default implementation of methods to forward direct interaction with
     DB classes.
     """
 
-    def __init__(self, db, default_table_name):
+    def __init__(self, db):
         """
         This is the constructor of the API Class.
         Args:
             db (DB): Client class to communicate with DB.
-            default_table_name (unicode): Name of the default table interrogated by the API.
         """
         self._db = db
-        self._db = getattr(self._db, default_table_name)
 
     def before(self, method_name):
         pass
@@ -187,13 +185,14 @@ class Api(object):
              limit=100):
         self.before(u"list")
         order = order or []
-        sort = [(order, order_by[index]) for index, order in enumerate(order)]
+        order_by = order_by or []
+
         items = list(self._db.find(**{
             u"query": filters,
             u"projection": projection,
             u"lookup": lookup,
             u"auto_lookup": auto_lookup
-        }).sort(sort).skip(offset).limit(limit + 1))
+        }).sort(order, order_by).skip(offset).limit(limit + 1))
 
         has_next = len(items) > limit
 
@@ -206,3 +205,14 @@ class Api(object):
             u"limit": limit,
             u"has_next": has_next
         }
+
+    def get_flask_adapter(self, flask_user_api):
+        """
+        Get an adapter for the API.
+        Args:
+            flask_user_api: The user api used to check roles.
+        Returns:
+            (FlaskAdapter): The adapter.
+        """
+        from .adapter.flask_adapter import FlaskAdapter
+        return FlaskAdapter(self, flask_user_api)

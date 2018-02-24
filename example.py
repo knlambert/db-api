@@ -3,33 +3,28 @@
 Helper code.
 """
 from flask import Flask
-from sqlcollectionapi.api import Api
-from sqlcollectionapi.db_api_blueprint import FlaskRestDBApi
+from dbapi.dbapi import DBApi
+
 from sqlcollection.client import Client
-import MySQLdb
+from user_api.user_api import UserApi
+from dbapi.dbapi import DBApi
 
+client = Client(url=u'mysql://root:localroot1234@127.0.0.1/')
+db = client.hours_count
 
-db = Client(
-    host=u"127.0.0.1",
-    user=u"root",
-    password=u"localroot1234"
-).hours_count
+# Create user api object
+user_api = UserApi(
+    db_host=u"127.0.0.1",
+    db_user=u"root",
+    db_passwd=u"localroot1234",
+    db_name=u"user_api",
+    jwt_secret=u"DUMMY",
+    jwt_lifetime=30 * 24 * 3600
+)
+flask_user_api = user_api.get_flask_adapter()
 
 APP = Flask(__name__)
-
-DB_REST_API_CONFIG = {
-    u"projects": Api(db, default_table_name=u"project"),
-    u"clients": Api(db, default_table_name=u"client"),
-    u"hours": Api(db, default_table_name=u"hour"),
-    u"project_assignements": Api(db, default_table_name=u"project_assignement"),
-    u"users": Api(db, default_table_name=u"user"),
-    u"cras": Api(db, default_table_name=u"cra")
-}
-
-DB_FLASK_API = FlaskRestDBApi(DB_REST_API_CONFIG)
-DB_FLASK_API_BLUEPRINT = DB_FLASK_API.construct_blueprint()
-
-APP.register_blueprint(DB_FLASK_API_BLUEPRINT, url_prefix=u'/api')
-
+APP.register_blueprint(DBApi(db.hour).get_flask_adapter(flask_user_api).construct_blueprint(), url_prefix=u'/api/hours')
+APP.register_blueprint(flask_user_api.construct_blueprint(), url_prefix=u"/api/users")
 if __name__ == u"__main__":
     APP.run(debug=True)
