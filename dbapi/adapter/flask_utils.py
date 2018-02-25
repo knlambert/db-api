@@ -42,6 +42,10 @@ LIST_API_VALIDATION_SCHEMA = {
         u"type": u"dict",
         u"coerce": to_dict
     },
+    u"projection": {
+        u"type": u"dict",
+        u"coerce": to_dict
+    },
     u"offset": {
         u"type": u"integer",
         u"coerce": int
@@ -59,6 +63,19 @@ LIST_API_VALIDATION_SCHEMA = {
         u"coerce": to_int_list
     }
 }
+
+AUTO_LOOKUP_SCHEMA = {
+    u"lookup": {
+        u"type": u"dict",
+        u"coerce": to_dict
+    },
+    u"auto_lookup": {
+        u"type": u"integer",
+        u"coerce": int
+    }
+}
+
+LIST_API_VALIDATION_SCHEMA.update(AUTO_LOOKUP_SCHEMA)
 
 LANGUAGE_SCHEMA = {
     u"lang": {
@@ -128,7 +145,6 @@ def flask_check_and_inject_payload(validation_schema=None):
                         )
                     args_dict = validator.document
                 kwargs[u"payload"] = args_dict
-
                 return funct(*args, **kwargs)
             else:
                 return flask_constructor_error(

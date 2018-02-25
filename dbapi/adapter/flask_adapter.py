@@ -2,10 +2,11 @@
 
 
 from .flask_utils import (
-    flask_check_and_inject_payload,
+    AUTO_LOOKUP_SCHEMA,
     flask_construct_response,
+    LIST_API_VALIDATION_SCHEMA,
     flask_check_and_inject_args,
-    LIST_API_VALIDATION_SCHEMA
+    flask_check_and_inject_payload
 )
 from flask import Blueprint
 
@@ -34,10 +35,29 @@ class FlaskAdapter(object):
         @self._flask_user_api.is_connected()
         @flask_check_and_inject_args(LIST_API_VALIDATION_SCHEMA)
         def find(args):
-            print(args)
             return flask_construct_response(
                 self._db_api.list(**args),
                 200
+            )
+
+        @db_api_blueprint.route(u'/<int:id>', methods=[u"GET"])
+        @self._flask_user_api.is_connected()
+        @flask_check_and_inject_args(AUTO_LOOKUP_SCHEMA)
+        def get(id, args):
+            return flask_construct_response(
+                self._db_api.get(id, **args),
+                code=200
+            )
+
+        @db_api_blueprint.route(u'/', methods=[u"POST"])
+        @self._flask_user_api.is_connected()
+        @flask_check_and_inject_args(AUTO_LOOKUP_SCHEMA)
+        @flask_check_and_inject_payload()
+        def create(args, payload):
+            args[u"document"] = payload
+            return flask_construct_response(
+                self._db_api.create(**args),
+                code=201
             )
 
         return db_api_blueprint
