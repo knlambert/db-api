@@ -38,10 +38,6 @@ to_unicode_list = lambda x: x.split(u",")
 to_int_list = lambda x: [int(val) for val in x.split(u",")]
 
 LIST_API_VALIDATION_SCHEMA = {
-    u"filters": {
-        u"type": u"dict",
-        u"coerce": to_dict
-    },
     u"projection": {
         u"type": u"dict",
         u"coerce": to_dict
@@ -63,6 +59,22 @@ LIST_API_VALIDATION_SCHEMA = {
         u"coerce": to_int_list
     }
 }
+UPDATE_DELETE_API_VALIDATION_SCHEMA = {}
+
+FILTER_SCHEMA = {
+    u"filter": {
+        u"type": u"dict",
+        u"coerce": to_dict
+    }
+}
+
+FILTER_UPDATE_DELETE_SCHEMA = {
+    u"filter": {
+        u"type": u"dict",
+        u"coerce": to_dict,
+        u"required": True
+    }
+}
 
 AUTO_LOOKUP_SCHEMA = {
     u"lookup": {
@@ -76,6 +88,10 @@ AUTO_LOOKUP_SCHEMA = {
 }
 
 LIST_API_VALIDATION_SCHEMA.update(AUTO_LOOKUP_SCHEMA)
+LIST_API_VALIDATION_SCHEMA.update(FILTER_SCHEMA)
+
+UPDATE_DELETE_API_VALIDATION_SCHEMA.update(AUTO_LOOKUP_SCHEMA)
+UPDATE_DELETE_API_VALIDATION_SCHEMA.update(FILTER_UPDATE_DELETE_SCHEMA)
 
 LANGUAGE_SCHEMA = {
     u"lang": {

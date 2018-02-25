@@ -28,15 +28,23 @@ class DBApi(object):
     def before(self, method_name):
         pass
 
-    def get_columns_from_description(self, description, parent=None):
+    def get_columns_from_description(self, description):
+        """
+        Get the list of columns reading the API description.
+        Args:
+            description (dict): The API description.
+
+        Returns:
+            (list of tuples): List of fields (name, type).
+        """
         columns = []
         for field in description.get(u"fields"):
             if u"nested_description" in field:
-                columns += self.get_columns_from_description(field[u"nested_description"], field.get(u"as"))
+                columns += self.get_columns_from_description(field[u"nested_description"])
             else:
                 column_name = field.get(u"name")
-                if parent:
-                    column_name = u".".join(parent.split(u".") + [field.get(u"name")])
+                if description.get(u"table") != self._db._table.name:
+                    column_name = u".".join(description.get(u"as").split(u".") + [column_name])
                 columns.append((column_name, field.get(u"type")))
 
         return columns
@@ -49,8 +57,9 @@ class DBApi(object):
             output,
             delimiter="\t"
         )
-        description = self._db.get_description(None, lookup, auto_lookup)
+        description = self._db.get_description(lookup, auto_lookup)
         col_desc = self.get_columns_from_description(description)
+        print(col_desc)
 
         def fetch(offset):
             return self.list(filters, projection, lookup, auto_lookup, order, order_by, limit=100, offset=offset)
@@ -112,7 +121,7 @@ class DBApi(object):
             u"inserted_id": result.inserted_id
         }
 
-    def description(self, lookup=None, auto_lookup=None):
+    def description(self, lookup=None, auto_lookup=0):
         """
         Get the description of the table (fields & relations).
         Args:
@@ -123,7 +132,7 @@ class DBApi(object):
             (dict): The description.
         """
         self.before(u"description")
-        return self._db.get_description(None, lookup, auto_lookup)
+        return self._db.get_description(lookup, auto_lookup)
 
     def delete(self, filters, lookup=None, auto_lookup=None):
         """
@@ -142,11 +151,11 @@ class DBApi(object):
             u"deleted_count": int(result.deleted_count)
         }
 
-    def update(self, filters, update, lookup=None, auto_lookup=None):
+    def update(self, filter, update, lookup=None, auto_lookup=None):
         """
         Update item(s).
         Args:
-            filters (dict): Filter to know what to delete.
+            filter (dict): Filter to know what to delete.
             update (dict): Fields to update.
             lookup (list of dict): Lookup option (joins).
             auto_lookup (int): Let the database construct the lookups (value is the deep).
@@ -155,7 +164,7 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"update")
-        result = self._db.update_many(filters, update, None, lookup, auto_lookup)
+        result = self._db.update_many(filter, update, lookup, auto_lookup)
         return {
             u"matched_count": int(result.matched_count)
         }
