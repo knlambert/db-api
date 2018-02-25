@@ -51,7 +51,7 @@ class DBApi(object):
 
         return columns
 
-    def export(self, filters=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None):
+    def export(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None):
         output = StringIO.StringIO()
         encoding = u"utf-8"
         # Open parsers
@@ -64,7 +64,7 @@ class DBApi(object):
         print(col_desc)
 
         def fetch(offset):
-            return self.list(filters, projection, lookup, auto_lookup, order, order_by, limit=100, offset=offset)
+            return self.list(filter, projection, lookup, auto_lookup, order, order_by, limit=100, offset=offset)
 
         def fetch_iterator():
             offset = 0
@@ -136,11 +136,11 @@ class DBApi(object):
         self.before(u"description")
         return self._collection.get_description(lookup, auto_lookup)
 
-    def delete(self, filters, lookup=None, auto_lookup=None):
+    def delete(self, filter, lookup=None, auto_lookup=None):
         """
         Delete item(s).
         Args:
-            filters (dict): Filter to know what to delete.
+            filter (dict): Filter to know what to delete.
             lookup (list of dict): Lookup option (joins).
             auto_lookup (int): Let the database construct the lookups (value is the deep).
 
@@ -148,7 +148,7 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"delete")
-        result = self._collection.delete_many(filters, lookup, auto_lookup)
+        result = self._collection.delete_many(filter, lookup, auto_lookup)
         return {
             u"deleted_count": int(result.deleted_count)
         }
@@ -192,14 +192,14 @@ class DBApi(object):
         }, update, None, lookup, auto_lookup)
         return self.get(document_id, lookup, auto_lookup)
 
-    def list(self, filters=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None, offset=0,
+    def list(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None, offset=0,
              limit=100):
         self.before(u"list")
         order = order or []
         order_by = order_by or []
 
         items = list(self._collection.find(**{
-            u"query": filters,
+            u"query": filter,
             u"projection": projection,
             u"lookup": lookup,
             u"auto_lookup": auto_lookup
