@@ -17,13 +17,15 @@ class DBApi(object):
     DB classes.
     """
 
-    def __init__(self, db):
+    def __init__(self, db, table_name):
         """
         This is the constructor of the API Class.
         Args:
             db (DB): Client class to communicate with DB.
+            table_name (unicode): The name of the table to communicate with.
         """
         self._db = db
+        self._collection = getattr(self._db, table_name)
 
     def before(self, method_name):
         pass
@@ -43,7 +45,7 @@ class DBApi(object):
                 columns += self.get_columns_from_description(field[u"nested_description"])
             else:
                 column_name = field.get(u"name")
-                if description.get(u"table") != self._db._table.name:
+                if description.get(u"table") != self._collection._table.name:
                     column_name = u".".join(description.get(u"as").split(u".") + [column_name])
                 columns.append((column_name, field.get(u"type")))
 
@@ -57,7 +59,7 @@ class DBApi(object):
             output,
             delimiter="\t"
         )
-        description = self._db.get_description(lookup, auto_lookup)
+        description = self._collection.get_description(lookup, auto_lookup)
         col_desc = self.get_columns_from_description(description)
         print(col_desc)
 
@@ -99,7 +101,7 @@ class DBApi(object):
             auto_lookup (int): Let the database construct the lookups (value is the deep).
         """
         self.before(u"get")
-        items = list(self._db.find({u"id": id}, lookup=lookup, auto_lookup=auto_lookup))
+        items = list(self._collection.find({u"id": id}, lookup=lookup, auto_lookup=auto_lookup))
         if len(items) == 1:
             return items[0]
         raise ApiNotFound
@@ -116,7 +118,7 @@ class DBApi(object):
             (dict): The result of the created item operation (with created ID).
         """
         self.before(u"create")
-        result = self._db.insert_one(document, lookup, auto_lookup)
+        result = self._collection.insert_one(document, lookup, auto_lookup)
         return {
             u"inserted_id": result.inserted_id
         }
@@ -132,7 +134,7 @@ class DBApi(object):
             (dict): The description.
         """
         self.before(u"description")
-        return self._db.get_description(lookup, auto_lookup)
+        return self._collection.get_description(lookup, auto_lookup)
 
     def delete(self, filters, lookup=None, auto_lookup=None):
         """
@@ -146,7 +148,7 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"delete")
-        result = self._db.delete_many(filters, lookup, auto_lookup)
+        result = self._collection.delete_many(filters, lookup, auto_lookup)
         return {
             u"deleted_count": int(result.deleted_count)
         }
@@ -164,7 +166,7 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"update")
-        result = self._db.update_many(filter, update, lookup, auto_lookup)
+        result = self._collection.update_many(filter, update, lookup, auto_lookup)
         return {
             u"matched_count": int(result.matched_count)
         }
@@ -185,7 +187,7 @@ class DBApi(object):
         if type(document_id) is not int:
             raise ValueError(u"document_id must be an integer.")
 
-        self._db.update_many({
+        self._collection.update_many({
             u"id": document_id
         }, update, None, lookup, auto_lookup)
         return self.get(document_id, lookup, auto_lookup)
@@ -196,7 +198,7 @@ class DBApi(object):
         order = order or []
         order_by = order_by or []
 
-        items = list(self._db.find(**{
+        items = list(self._collection.find(**{
             u"query": filters,
             u"projection": projection,
             u"lookup": lookup,

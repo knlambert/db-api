@@ -34,7 +34,7 @@ class FlaskAdapter(object):
         Returns:
             (Blueprint): The constructed blueprint.
         """
-        self._db_api_blueprint = Blueprint(u'{}_db_api'.format(self._db_api._db._table.name), __name__)
+        self._db_api_blueprint = Blueprint(u'{}_db_api'.format(self._db_api._collection._table.name), __name__)
 
         @self._db_api_blueprint.route(u'/', methods=[u"GET"])
         @self._flask_user_api.is_connected()

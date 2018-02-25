@@ -25,13 +25,13 @@ flask_user_api = USER_API.get_flask_adapter()
 APP = Flask(__name__)
 APP.register_blueprint(flask_user_api.construct_blueprint(), url_prefix=u"/api/users")
 
-db_apis = [
-    u"hours"
+services = [
+    (u"hour", u"hours")
 ]
 
-for db_api in db_apis:
+for table_name, service_name in services:
 
-    db_blueprint = DBApi(db.hour).get_flask_adapter(flask_user_api).construct_blueprint()
+    db_blueprint = DBApi(db, table_name).get_flask_adapter(flask_user_api).construct_blueprint()
 
     @db_blueprint.errorhandler(user_api.ApiException)
     def user_api_error_wrapper(exception):
@@ -40,7 +40,7 @@ for db_api in db_apis:
 
     APP.register_blueprint(
         db_blueprint,
-        url_prefix=u'/api/{}'.format(db_api)
+        url_prefix=u'/api/{}'.format(service_name)
     )
 
 
