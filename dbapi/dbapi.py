@@ -4,8 +4,10 @@ Module which contains the API class.
 """
 
 import csv
+import time
+import datetime
 import StringIO
-from datetime import datetime
+import calendar
 from .utils import json_to_one_level
 from .api_exception import ApiForbidden, ApiUnauthorized, ApiNotFound
 
@@ -82,8 +84,8 @@ class DBApi(object):
             line = []
             for col_name, col_typ in col_desc:
                 value = item.get(col_name)
-                if col_typ == u"timestamp":
-                    value = datetime.utcfromtimestamp(
+                if col_typ == u"datetime":
+                    value = datetime.datetime.utcfromtimestamp(
                         int(value)
                     ).strftime(u'%Y-%m-%d %H:%M:%S')
                 line.append(unicode(value).encode(encoding))
@@ -211,11 +213,33 @@ class DBApi(object):
             del items[-1]
 
         return {
-            u"items": items,
+            u"items": self._convert_python_types(items),
             u"offset": offset,
             u"limit": limit,
             u"has_next": has_next
         }
+
+    def _convert_python_types(self, items):
+        """
+        Process a list of dict to convert the python type into API friendly ones.
+        Args:
+            items (list of dict): The array to process.
+
+        Returns:
+            (list of dict): The list of dict with converted types.
+        """
+        for index, item in enumerate(items):
+            for key in items[index]:
+
+                if isinstance(items[index][key], datetime.datetime):
+                    items[index][key] = int((items[index][key] - datetime.datetime(1970, 1, 1)).total_seconds())
+
+                elif isinstance(items[index][key], datetime.date):
+                    items[index][key] = int(calendar.timegm(items[index][key].timetuple()))
+
+                elif isinstance(items[index][key], dict):
+                    items[index][key] = self._convert_python_types([items[index][key]])[0]
+        return items
 
     def get_flask_adapter(self, flask_user_api):
         """

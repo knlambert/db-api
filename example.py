@@ -26,7 +26,9 @@ APP = Flask(__name__)
 APP.register_blueprint(flask_user_api.construct_blueprint(), url_prefix=u"/api/users")
 
 services = [
-    (u"hour", u"hours")
+    # (u"hour", u"hours"),
+    (u"project", u"projects")
+    # (u"project_assignement", u"project-assignements")
 ]
 
 for table_name, service_name in services:
