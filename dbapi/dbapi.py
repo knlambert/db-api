@@ -9,7 +9,8 @@ import datetime
 import StringIO
 import calendar
 from .utils import json_to_one_level
-from .api_exception import ApiForbidden, ApiUnauthorized, ApiNotFound
+from sqlcollection.exception import IntegrityError
+from .api_exception import ApiUnprocessableEntity, ApiNotFound
 
 
 class DBApi(object):
@@ -120,7 +121,10 @@ class DBApi(object):
             (dict): The result of the created item operation (with created ID).
         """
         self.before(u"create")
-        result = self._collection.insert_one(document, lookup, auto_lookup)
+        try:
+            result = self._collection.insert_one(document, lookup, auto_lookup)
+        except IntegrityError:
+            raise ApiUnprocessableEntity(U"Error at item creation.")
         return {
             u"inserted_id": result.inserted_id
         }
@@ -150,7 +154,10 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"delete")
-        result = self._collection.delete_many(filter, lookup, auto_lookup)
+        try:
+            result = self._collection.delete_many(filter, lookup, auto_lookup)
+        except IntegrityError:
+            raise ApiUnprocessableEntity(U"Error at item(s) deletion.")
         return {
             u"deleted_count": int(result.deleted_count)
         }
@@ -168,31 +175,14 @@ class DBApi(object):
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"update")
-        result = self._collection.update_many(filter, update, lookup, auto_lookup)
+        try:
+            result = self._collection.update_many(filter, update, lookup, auto_lookup)
+        except IntegrityError:
+            raise ApiUnprocessableEntity(U"Error at item(s) update.")
+
         return {
             u"matched_count": int(result.matched_count)
         }
-
-    def update_id(self, document_id, update, lookup=None, auto_lookup=None):
-        """
-        Update item(s).
-        Args:
-            document_id (int): The ID of the document to update.
-            update (dict): Fields to update.
-            lookup (list of dict): Lookup option (joins).
-            auto_lookup (int): Let the database construct the lookups (value is the deep).
-
-        Returns:
-            (dict): The result of the deletion (with number of items deleted).
-        """
-        self.before(u"update")
-        if type(document_id) is not int:
-            raise ValueError(u"document_id must be an integer.")
-
-        self._collection.update_many({
-            u"id": document_id
-        }, update, None, lookup, auto_lookup)
-        return self.get(document_id, lookup, auto_lookup)
 
     def list(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None, offset=0,
              limit=100):

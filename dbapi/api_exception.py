@@ -26,12 +26,12 @@ class ApiNotFound(ApiException):
 
 
 class ApiUnprocessableEntity(ApiException):
-    def __init__(self, message, api_error_code=None, payload=None):
+    def __init__(self, message=u"Unprocessable.<", api_error_code=None, payload=None):
         ApiException.__init__(self, message, 422, api_error_code, payload)
 
 
 class ApiForbidden(ApiException):
-    def __init__(self, message, api_error_code=None, payload=None):
+    def __init__(self, message=u"Forbidden.", api_error_code=None, payload=None):
         ApiException.__init__(self, message, 403, api_error_code, payload)
 
 
@@ -41,5 +41,10 @@ class ApiRoleMissing(ApiForbidden):
 
 
 class ApiUnauthorized(ApiException):
-    def __init__(self, message, api_error_code=None, payload=None):
+    def __init__(self, message=u"Unauthorized.", api_error_code=None, payload=None):
         ApiException.__init__(self, message, 401, api_error_code, payload)
+
+
+class ApiConflict(ApiException):
+    def __init__(self, message=u"Conflict.", api_error_code=None, payload=None):
+        ApiException.__init__(self, message, 409, api_error_code, payload)
