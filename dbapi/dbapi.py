@@ -33,7 +33,14 @@ class DBApi(object):
     def before(self, method_name):
         pass
 
-    def get_columns_from_description(self, description):
+    def get_timestamp_coerce(self, type_):
+
+        def coerce(value):
+            return datetime.datetime()
+
+        return coerce
+
+    def get_validation_schema_from_description(self, description):
         """
         Get the list of columns reading the API description.
         Args:
@@ -42,17 +49,24 @@ class DBApi(object):
         Returns:
             (list of tuples): List of fields (name, type).
         """
-        columns = []
-        for field in description.get(u"fields"):
-            if u"nested_description" in field:
-                columns += self.get_columns_from_description(field[u"nested_description"])
-            else:
-                column_name = field.get(u"name")
-                if description.get(u"table") != self._collection._table.name:
-                    column_name = u".".join(description.get(u"as").split(u".") + [column_name])
-                columns.append((column_name, field.get(u"type")))
+        schema = {}
 
-        return columns
+        for field in description.get(u"fields"):
+            schema[field[u"name"]] = {
+                u"type": field[u"type"],
+                u"required": field[u"required"],
+                u"nullable": not field[u"required"]
+            }
+            if field[u"type"] in [u"datetime", u"date"]:
+                schema[field[u"name"]][u"type"] = u"integer"
+                schema[field[u"name"]][u"coerce"] = self.get_timestamp_coerce(field[u"type"])
+
+            elif u"nested_description" in field:
+                schema[field[u"name"]][u"type"] = u"dict"
+                schema[field[u"name"]][u"schema"] = self.get_validation_schema_from_description(
+                    description=field[u"nested_description"]
+                )
+        return schema
 
     def export(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None):
         output = StringIO.StringIO()
@@ -63,8 +77,7 @@ class DBApi(object):
             delimiter="\t"
         )
         description = self._collection.get_description(lookup, auto_lookup)
-        col_desc = self.get_columns_from_description(description)
-        print(col_desc)
+        col_desc = self.get_validation_schema_from_description(description)
 
         def fetch(offset):
             return self.list(filter, projection, lookup, auto_lookup, order, order_by, limit=100, offset=offset)
@@ -122,9 +135,14 @@ class DBApi(object):
         """
         self.before(u"create")
         try:
-            result = self._collection.insert_one(document, lookup, auto_lookup)
+            description = self._collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
+            # result = self._collection.insert_one(document, lookup, auto_lookup)
+            columns = self.get_validation_schema_from_description(description)
+            return {
+                u"test": columns
+            }
         except IntegrityError:
-            raise ApiUnprocessableEntity(U"Error at item creation.")
+            raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
         return {
             u"inserted_id": result.inserted_id
         }
@@ -142,6 +160,20 @@ class DBApi(object):
         self.before(u"description")
         return self._collection.get_description(lookup, auto_lookup)
 
+    def validation_schema(self, lookup=None, auto_lookup=0):
+        """
+        Get the schema of the table (fields & relations).
+        Args:
+            lookup (list of dict): Lookup option (joins).
+            auto_lookup (int): Let the database construct the lookups (value is the deep).
+
+        Returns:
+            (dict): The description.
+        """
+        self.before(u"description")
+        description = self._collection.get_description(lookup, auto_lookup)
+        return self.get_validation_schema_from_description(description)
+
     def delete(self, filter, lookup=None, auto_lookup=None):
         """
         Delete item(s).
@@ -157,7 +189,7 @@ class DBApi(object):
         try:
             result = self._collection.delete_many(filter, lookup, auto_lookup)
         except IntegrityError:
-            raise ApiUnprocessableEntity(U"Error at item(s) deletion.")
+            raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
         return {
             u"deleted_count": int(result.deleted_count)
         }
@@ -178,7 +210,7 @@ class DBApi(object):
         try:
             result = self._collection.update_many(filter, update, lookup, auto_lookup)
         except IntegrityError:
-            raise ApiUnprocessableEntity(U"Error at item(s) update.")
+            raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
 
         return {
             u"matched_count": int(result.matched_count)
