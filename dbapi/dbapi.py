@@ -33,12 +33,25 @@ class DBApi(object):
     def before(self, method_name):
         pass
 
-    def get_timestamp_coerce(self, type_):
+    @staticmethod
+    def _get_timestamp_coerce(type_):
+        """
+        Returns a method to convert a timestamp into a date or into
+        a datetime.
+        Used to define the validation schema for the API.
+        Args:
+            type_ (unicode): The name of the type to convert into.
 
-        def coerce(value):
-            return datetime.datetime()
+        Returns:
+            (callable): The generated function.
+        """
+        def convert(timestamp):
+            converted = datetime.datetime.utcfromtimestamp(int(timestamp))
+            if type_ == u"date":
+                return converted.date()
+            return converted
 
-        return coerce
+        return convert
 
     def get_validation_schema_from_description(self, description):
         """
@@ -59,7 +72,7 @@ class DBApi(object):
             }
             if field[u"type"] in [u"datetime", u"date"]:
                 schema[field[u"name"]][u"type"] = u"integer"
-                schema[field[u"name"]][u"coerce"] = self.get_timestamp_coerce(field[u"type"])
+                schema[field[u"name"]][u"coerce"] = self._get_timestamp_coerce(field[u"type"])
 
             elif u"nested_description" in field:
                 schema[field[u"name"]][u"type"] = u"dict"
