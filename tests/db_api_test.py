@@ -46,10 +46,9 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
     }
 
     assert validation_schema[u"started_at"][u"type"] == u"datetime"
-    assert validation_schema[u"started_at"][u"required"] == True
-    assert validation_schema[u"started_at"][u"nullable"] == False
+    assert validation_schema[u"started_at"][u"required"]
+    assert not validation_schema[u"started_at"][u"nullable"]
     assert callable(validation_schema[u"started_at"][u"coerce"])
-
 
     assert validation_schema[u"client"] == {
         u"type": u"dict",
@@ -70,6 +69,48 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
         }
     }
 
+
+def test_get_validation_schema_from_description_update(stubbed_db_api, project_description):
+    validation_schema = stubbed_db_api.get_validation_schema_from_description(project_description, is_update=True)
+
+    for key in [u"id", u"client", u"provisioned_hours", u"started_at"]:
+        assert key in validation_schema
+
+    assert validation_schema[u"id"] == {
+        u"required": False,
+        u"type": u"integer",
+        u"nullable": False
+    }
+
+    assert validation_schema[u"provisioned_hours"] == {
+        u"required": False,
+        u"type": u"float",
+        u"nullable": True
+    }
+
+    assert validation_schema[u"started_at"][u"type"] == u"datetime"
+    assert not validation_schema[u"started_at"][u"required"]
+    assert not validation_schema[u"started_at"][u"nullable"]
+    assert callable(validation_schema[u"started_at"][u"coerce"])
+
+    assert validation_schema[u"client"] == {
+        u"type": u"dict",
+        u"required": False,
+        u"nullable": False,
+        u"schema": {
+            u"id": {
+                u"required": False,
+                u"type": u"integer",
+                u"nullable": False
+            },
+            u"name": {
+                u"required": False,
+                u"type": u"string",
+                u"nullable": False
+            }
+
+        }
+    }
 
 def test__convert_python_types(stubbed_db_api):
     # Basic test, datetime.

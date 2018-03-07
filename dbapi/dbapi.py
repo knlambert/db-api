@@ -54,11 +54,14 @@ class DBApi(object):
 
         return convert
 
-    def get_validation_schema_from_description(self, description, is_root=True):
+    def get_validation_schema_from_description(self, description, is_root=True, is_update=False):
         """
         Get the list of columns reading the API description.
         Args:
             description (dict): The API description.
+            is_root (boolean): If the description corresponds to the root collection (differs on how autoincrement
+                are handled).
+            is_update (boolean): If the validation correspond to an update operation.
 
         Returns:
             (list of tuples): List of fields (name, type).
@@ -72,7 +75,7 @@ class DBApi(object):
                     # Required if doesnt accept null and doesnt have auto increment.
                     not field[u"nullable"] and not (
                         not field[u"nullable"] and field.get(u"autoincrement", False) and is_root
-                    )
+                    ) and not is_update
                 ),
                 u"nullable": field[u"nullable"]
             }
@@ -84,11 +87,11 @@ class DBApi(object):
             elif u"nested_description" in field:
                 schema[field[u"name"]][u"type"] = u"dict"
                 schema[field[u"name"]][u"schema"] = self.get_validation_schema_from_description(
-                    description=field[u"nested_description"], is_root=False
+                    description=field[u"nested_description"], is_root=False, is_update=is_update
                 )
         return schema
 
-    def export(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None):
+    def export(self, filter=None, projection=None, lookup=None, auto_lookup=0, order=None, order_by=None):
         output = StringIO.StringIO()
         encoding = u"utf-8"
         # Open parsers
@@ -128,7 +131,7 @@ class DBApi(object):
 
         return output.getvalue()
 
-    def get(self, id, lookup=None, auto_lookup=None):
+    def get(self, id, lookup=None, auto_lookup=0):
         """
         Get an item from ID.
         Args:
@@ -142,11 +145,22 @@ class DBApi(object):
             return items[0]
         raise ApiNotFound
 
-    def validate(self, document, lookup, auto_lookup):
+    def validate(self, document, lookup, auto_lookup, is_update=False):
+        """
+        Validate a document regarding the database.
+        Args:
+            document (dict): The JSON representation of the Item.
+            lookup (list of dict): Lookup option (joins).
+            auto_lookup (int): Let the database construct the lookups (value is the deep).
+            is_update (boolean): If the validation correspond to an update operation.
+
+        Raises:
+            ApiUnprocessableEntity: If the document doesn't comply to the required format.
+        """
 
         description = self._collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
         validation_schema = self.get_validation_schema_from_description(
-            description
+            description, is_update=is_update
         )
         validator = Validator(validation_schema)
         if not validator.validate(document):
@@ -160,7 +174,7 @@ class DBApi(object):
         """
         Create an item.
         Args:
-            item (dict): The JSON representation of the Item to create.
+            document (dict): The JSON representation of the Item to create.
             lookup (list of dict): Lookup option (joins).
             auto_lookup (int): Let the database construct the lookups (value is the deep).
 
@@ -171,7 +185,6 @@ class DBApi(object):
         try:
             self.validate(document, lookup, auto_lookup)
             result = self._collection.insert_one(document, lookup, auto_lookup)
-            # columns = self.get_validation_schema_from_description(description)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
         return {
@@ -191,7 +204,7 @@ class DBApi(object):
         self.before(u"description")
         return self._collection.get_description(lookup, auto_lookup)
 
-    def validation_schema(self, lookup=None, auto_lookup=0):
+    def validation_schema(self, lookup=None, auto_lookup=0, is_update=False):
         """
         Get the schema of the table (fields & relations).
         Args:
@@ -203,9 +216,9 @@ class DBApi(object):
         """
         self.before(u"description")
         description = self._collection.get_description(lookup, auto_lookup)
-        return self.get_validation_schema_from_description(description)
+        return self.get_validation_schema_from_description(description, is_update)
 
-    def delete(self, filter, lookup=None, auto_lookup=None):
+    def delete(self, filter, lookup=None, auto_lookup=0):
         """
         Delete item(s).
         Args:
@@ -225,7 +238,7 @@ class DBApi(object):
             u"deleted_count": int(result.deleted_count)
         }
 
-    def update(self, filter, update, lookup=None, auto_lookup=None):
+    def update(self, filter, update, lookup=None, auto_lookup=0):
         """
         Update item(s).
         Args:
@@ -239,6 +252,8 @@ class DBApi(object):
         """
         self.before(u"update")
         try:
+            document = update[u"$set"]
+            self.validate(document, lookup, auto_lookup, is_update=True)
             result = self._collection.update_many(filter, update, lookup, auto_lookup)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
@@ -247,7 +262,7 @@ class DBApi(object):
             u"matched_count": int(result.matched_count)
         }
 
-    def list(self, filter=None, projection=None, lookup=None, auto_lookup=None, order=None, order_by=None, offset=0,
+    def list(self, filter=None, projection=None, lookup=None, auto_lookup=0, order=None, order_by=None, offset=0,
              limit=100):
         self.before(u"list")
         order = order or []
