@@ -56,12 +56,12 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
         u"nullable": False,
         u"schema": {
             u"id": {
-                u"required": True,
+                u"required": False,
                 u"type": u"integer",
                 u"nullable": False
             },
             u"name": {
-                u"required": True,
+                u"required": False,
                 u"type": u"string",
                 u"nullable": False
             }

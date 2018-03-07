@@ -50,6 +50,7 @@ class DBApi(object):
             converted = datetime.datetime.utcfromtimestamp(int(timestamp))
             if type_ == u"date":
                 return converted.date()
+
             return converted
 
         return convert
@@ -71,14 +72,14 @@ class DBApi(object):
         for field in description.get(u"fields"):
             schema[field[u"name"]] = {
                 u"type": field[u"type"],
-                u"required": (
-                    # Required if doesnt accept null and doesnt have auto increment.
-                    not field[u"nullable"] and not (
-                        not field[u"nullable"] and field.get(u"autoincrement", False) and is_root
-                    ) and not is_update
-                ),
                 u"nullable": field[u"nullable"]
             }
+            is_required = (not field[u"nullable"] and not is_update) and is_root
+            # If auto increment
+            if not field[u"nullable"] and field.get(u"autoincrement", False) and is_root:
+                is_required = False
+
+            schema[field[u"name"]][u"required"] = is_required
 
             if field[u"type"] in [u"datetime", u"date"]:
                 schema[field[u"name"]][u"type"] = field[u"type"]
@@ -86,9 +87,11 @@ class DBApi(object):
 
             elif u"nested_description" in field:
                 schema[field[u"name"]][u"type"] = u"dict"
+                schema[field[u"name"]][u"required"] = not is_update
                 schema[field[u"name"]][u"schema"] = self.get_validation_schema_from_description(
                     description=field[u"nested_description"], is_root=False, is_update=is_update
                 )
+
         return schema
 
     def export(self, filter=None, projection=None, lookup=None, auto_lookup=0, order=None, order_by=None):
@@ -154,6 +157,9 @@ class DBApi(object):
             auto_lookup (int): Let the database construct the lookups (value is the deep).
             is_update (boolean): If the validation correspond to an update operation.
 
+        Returns:
+            (dict): The formatted document.
+
         Raises:
             ApiUnprocessableEntity: If the document doesn't comply to the required format.
         """
@@ -169,6 +175,7 @@ class DBApi(object):
                 api_error_code=u"WRONG_PAYLOAD_FORMAT",
                 payload=validator.errors
             )
+        return validator.document
 
     def create(self, document, lookup=None, auto_lookup=0):
         """
@@ -183,7 +190,7 @@ class DBApi(object):
         """
         self.before(u"create")
         try:
-            self.validate(document, lookup, auto_lookup)
+            document = self.validate(document, lookup, auto_lookup)
             result = self._collection.insert_one(document, lookup, auto_lookup)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
@@ -252,8 +259,7 @@ class DBApi(object):
         """
         self.before(u"update")
         try:
-            document = update[u"$set"]
-            self.validate(document, lookup, auto_lookup, is_update=True)
+            update[u"$set"] = self.validate(update[u"$set"], lookup, auto_lookup, is_update=True)
             result = self._collection.update_many(filter, update, lookup, auto_lookup)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
