@@ -26,7 +26,7 @@ class ApiNotFound(ApiException):
 
 
 class ApiUnprocessableEntity(ApiException):
-    def __init__(self, message=u"Unprocessable.<", api_error_code=None, payload=None):
+    def __init__(self, message=u"Unprocessable Entity.", api_error_code=None, payload=None):
         ApiException.__init__(self, message, 422, api_error_code, payload)
 
 

@@ -13,43 +13,28 @@ def stubbed_db_api():
 
 @fixture(scope=u"function")
 def project_description():
-    return {
-        u'fields': [
-            {
-                u'required': True,
-                u'type': u'integer',
-                u'name': u'id',
-                u'primary_key': True
-            },
-            {
-                u'nested_description': {
-                    u'fields': [
-                        {u'required': True, u'type': u'integer', u'name': u'id', u'primary_key': True},
-                        {u'required': True, u'type': u'string', u'name': u'name', u'primary_key': False}
-                    ],
-                    u'as': u'client',
-                    u'table': u'client'
-                }, u'required': True,
-                u'type': u'integer',
-                u'name': u'client',
-                u'primary_key': False
-            },
-            {
-                u'required': False, u'type': u'float', u'name': u'provisioned_hours', u'primary_key': False
-            }, {
-                u'required': True, u'type': u'datetime', u'name': u'started_at', u'primary_key': False
-            }
-        ],
-        u'as': u'project', u'table': u'project'}
+    return {u'fields': [
+        {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
+        {u'name': u'client', u'nullable': False, u'autoincrement': False, u'nested_description': {u'fields': [
+            {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
+            {u'nullable': False, u'type': u'string', u'name': u'name', u'primary_key': False}], u'as': u'client',
+                                                                                                  u'table': u'client'},
+         u'type': u'integer', u'primary_key': False},
+        {u'autoincrement': False, u'nullable': True, u'type': u'float', u'name': u'provisioned_hours',
+         u'primary_key': False},
+        {u'nullable': False, u'type': u'datetime', u'name': u'started_at', u'primary_key': False},
+        {u'nullable': True, u'type': u'string', u'name': u'code', u'primary_key': False}], u'as': u'project',
+            u'table': u'project'}
 
 
 def test_get_validation_schema_from_description(stubbed_db_api, project_description):
     validation_schema = stubbed_db_api.get_validation_schema_from_description(project_description)
+
     for key in [u"id", u"client", u"provisioned_hours", u"started_at"]:
         assert key in validation_schema
 
     assert validation_schema[u"id"] == {
-        u"required": True,
+        u"required": False,
         u"type": u"integer",
         u"nullable": False
     }
@@ -60,10 +45,11 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
         u"nullable": True
     }
 
-    assert validation_schema[u"started_at"][u"type"] == u"integer"
+    assert validation_schema[u"started_at"][u"type"] == u"datetime"
     assert validation_schema[u"started_at"][u"required"] == True
     assert validation_schema[u"started_at"][u"nullable"] == False
     assert callable(validation_schema[u"started_at"][u"coerce"])
+
 
     assert validation_schema[u"client"] == {
         u"type": u"dict",
@@ -132,6 +118,3 @@ def test_coerce_method_date(stubbed_db_api):
         month=9,
         day=25
     )
-
-
-

@@ -8,6 +8,7 @@ import time
 import datetime
 import StringIO
 import calendar
+from cerberus import Validator
 from .utils import json_to_one_level
 from sqlcollection.exception import IntegrityError
 from .api_exception import ApiUnprocessableEntity, ApiNotFound
@@ -53,7 +54,7 @@ class DBApi(object):
 
         return convert
 
-    def get_validation_schema_from_description(self, description):
+    def get_validation_schema_from_description(self, description, is_root=True):
         """
         Get the list of columns reading the API description.
         Args:
@@ -67,17 +68,23 @@ class DBApi(object):
         for field in description.get(u"fields"):
             schema[field[u"name"]] = {
                 u"type": field[u"type"],
-                u"required": field[u"required"],
-                u"nullable": not field[u"required"]
+                u"required": (
+                    # Required if doesnt accept null and doesnt have auto increment.
+                    not field[u"nullable"] and not (
+                        not field[u"nullable"] and field.get(u"autoincrement", False) and is_root
+                    )
+                ),
+                u"nullable": field[u"nullable"]
             }
+
             if field[u"type"] in [u"datetime", u"date"]:
-                schema[field[u"name"]][u"type"] = u"integer"
+                schema[field[u"name"]][u"type"] = field[u"type"]
                 schema[field[u"name"]][u"coerce"] = self._get_timestamp_coerce(field[u"type"])
 
             elif u"nested_description" in field:
                 schema[field[u"name"]][u"type"] = u"dict"
                 schema[field[u"name"]][u"schema"] = self.get_validation_schema_from_description(
-                    description=field[u"nested_description"]
+                    description=field[u"nested_description"], is_root=False
                 )
         return schema
 
@@ -135,7 +142,21 @@ class DBApi(object):
             return items[0]
         raise ApiNotFound
 
-    def create(self, document, lookup=None, auto_lookup=None):
+    def validate(self, document, lookup, auto_lookup):
+
+        description = self._collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
+        validation_schema = self.get_validation_schema_from_description(
+            description
+        )
+        validator = Validator(validation_schema)
+        if not validator.validate(document):
+            raise ApiUnprocessableEntity(
+                message=u"The payload format is wrong.",
+                api_error_code=u"WRONG_PAYLOAD_FORMAT",
+                payload=validator.errors
+            )
+
+    def create(self, document, lookup=None, auto_lookup=0):
         """
         Create an item.
         Args:
@@ -148,12 +169,9 @@ class DBApi(object):
         """
         self.before(u"create")
         try:
-            description = self._collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
-            # result = self._collection.insert_one(document, lookup, auto_lookup)
-            columns = self.get_validation_schema_from_description(description)
-            return {
-                u"test": columns
-            }
+            self.validate(document, lookup, auto_lookup)
+            result = self._collection.insert_one(document, lookup, auto_lookup)
+            # columns = self.get_validation_schema_from_description(description)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
         return {
