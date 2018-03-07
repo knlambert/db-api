@@ -78,8 +78,33 @@ FILTER_UPDATE_DELETE_SCHEMA = {
 
 AUTO_LOOKUP_SCHEMA = {
     u"lookup": {
-        u"type": u"dict",
-        u"coerce": to_dict
+        u'type': u'list',
+        u"coerce": to_dict,
+        u'schema': {
+            u'type': u'dict',
+            u'schema': {
+                u"as": {
+                    u"type": u"string",
+                    u"required": True
+                },
+                u"from": {
+                    u"type": u"string",
+                    u"required": True
+                },
+                u"to": {
+                    u"type": u"string",
+                    u"required": True
+                },
+                u"localField": {
+                    u"type": u"string",
+                    u"required": True
+                },
+                u"foreignField": {
+                    u"type": u"string",
+                    u"required": True
+                }
+            }
+        }
     },
     u"auto_lookup": {
         u"type": u"integer",
