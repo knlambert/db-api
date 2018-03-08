@@ -86,7 +86,7 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
         u"type": u"dict",
         u"required": True,
         u"nullable": False,
-        u"allow_unknown": True,
+        u"purge_unknown": True,
         u"schema": {
             u"id": {
                 u"required": True,
@@ -171,7 +171,7 @@ def test_get_validation_schema_from_description_update_no_deep(stubbed_db_api, p
         u"type": u"dict",
         u"required": False,
         u"nullable": False,
-        u"allow_unknown": True,
+        u"purge_unknown": True,
         u"schema": {
             u"id": {
                 u"required": False,

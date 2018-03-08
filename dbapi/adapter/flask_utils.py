@@ -68,11 +68,18 @@ FILTER_SCHEMA = {
     }
 }
 
+
 FILTER_UPDATE_DELETE_SCHEMA = {
     u"filter": {
         u"type": u"dict",
         u"coerce": to_dict,
         u"required": True
+    },
+    u"deep_update": {
+        u"type": u"boolean",
+        u"required": False,
+        u"default": False,
+        u"coerce": lambda x: unicode(x).lower() == u"true"
     }
 }
 

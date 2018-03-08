@@ -69,7 +69,6 @@ class DBApi(object):
             (list of tuples): List of fields (name, type).
         """
         schema = {}
-
         for field in description.get(u"fields"):
             is_foreign_field = (field[u"name"] == description.get(u"foreignField", False))
 
@@ -104,7 +103,7 @@ class DBApi(object):
 
                     # If it's an insert or not a deep update.
                     if not is_update or not deep_update:
-                        rule[u"allow_unknown"] = True
+                        rule[u"purge_unknown"] = True
 
                     rule[u"schema"] = self.get_validation_schema_from_description(
                         description=field[u"nested_description"],
@@ -171,7 +170,7 @@ class DBApi(object):
             return items[0]
         raise ApiNotFound
 
-    def validate(self, document, lookup, auto_lookup, is_update=False):
+    def validate(self, document, lookup, auto_lookup, is_update=False, deep_update=False):
         """
         Validate a document regarding the database.
         Args:
@@ -179,6 +178,7 @@ class DBApi(object):
             lookup (list of dict): Lookup option (joins).
             auto_lookup (int): Let the database construct the lookups (value is the deep).
             is_update (boolean): If the validation correspond to an update operation.
+            deep_update (boolean): Allows or not to perform an update on sub fields.
 
         Returns:
             (dict): The formatted document.
@@ -186,10 +186,9 @@ class DBApi(object):
         Raises:
             ApiUnprocessableEntity: If the document doesn't comply to the required format.
         """
-
         description = self._collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
         validation_schema = self.get_validation_schema_from_description(
-            description, is_update=is_update
+            description, is_update=is_update, deep_update=deep_update
         )
         validator = Validator(validation_schema)
         if not validator.validate(document):
@@ -268,7 +267,7 @@ class DBApi(object):
             u"deleted_count": int(result.deleted_count)
         }
 
-    def update(self, filter, update, lookup=None, auto_lookup=0):
+    def update(self, filter, update, lookup=None, auto_lookup=0, deep_update=False):
         """
         Update item(s).
         Args:
@@ -276,13 +275,14 @@ class DBApi(object):
             update (dict): Fields to update.
             lookup (list of dict): Lookup option (joins).
             auto_lookup (int): Let the database construct the lookups (value is the deep).
+            deep_update (boolean): Allows or not to perform an update on sub fields.
 
         Returns:
             (dict): The result of the deletion (with number of items deleted).
         """
         self.before(u"update")
         try:
-            update[u"$set"] = self.validate(update[u"$set"], lookup, auto_lookup, is_update=True)
+            update[u"$set"] = self.validate(update[u"$set"], lookup, auto_lookup, is_update=True, deep_update=deep_update)
             result = self._collection.update_many(filter, update, lookup, auto_lookup)
         except IntegrityError:
             raise ApiUnprocessableEntity(U"Integrity error.", api_error_code=u"INTEGRITY_ERROR")
