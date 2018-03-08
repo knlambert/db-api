@@ -55,7 +55,7 @@ class DBApi(object):
 
         return convert
 
-    def get_validation_schema_from_description(self, description, is_root=True, is_update=False):
+    def get_validation_schema_from_description(self, description, is_root=True, is_update=False, deep_update=True):
         """
         Get the list of columns reading the API description.
         Args:
@@ -63,6 +63,7 @@ class DBApi(object):
             is_root (boolean): If the description corresponds to the root collection (differs on how autoincrement
                 are handled).
             is_update (boolean): If the validation correspond to an update operation.
+            deep_update (boolean): Allows or not to perform an update on sub fields.
 
         Returns:
             (list of tuples): List of fields (name, type).
@@ -72,17 +73,17 @@ class DBApi(object):
         for field in description.get(u"fields"):
             is_foreign_field = (field[u"name"] == description.get(u"foreignField", False))
 
-            if is_root or is_foreign_field or is_update:
+            if is_root or is_foreign_field or (is_update and deep_update):
                 rule = {
                     u"type": field[u"type"],
                     u"nullable": field[u"nullable"]
                 }
                 is_required = not field[u"nullable"]
 
-                if is_update: # If update, nothing is required.
+                if is_update:  # If update, nothing is required.
                     is_required = False
 
-                else: # If insert
+                else:  # If insert
                     # If insert on the root table and has autoincrement, not nullable, but not required.
                     if is_root and field.get(u"autoincrement", False) and not is_foreign_field:
                         is_required = False
@@ -100,11 +101,16 @@ class DBApi(object):
                 elif u"nested_description" in field:
                     rule[u"type"] = u"dict"
                     rule[u"required"] = not is_update
-                    if not is_update:
+
+                    # If it's an insert or not a deep update.
+                    if not is_update or not deep_update:
                         rule[u"allow_unknown"] = True
 
                     rule[u"schema"] = self.get_validation_schema_from_description(
-                        description=field[u"nested_description"], is_root=False, is_update=is_update
+                        description=field[u"nested_description"],
+                        is_root=False,
+                        is_update=is_update,
+                        deep_update=deep_update
                     )
 
                 schema[field[u"name"]] = rule

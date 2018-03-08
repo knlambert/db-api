@@ -140,9 +140,46 @@ def test_get_validation_schema_from_description_update(stubbed_db_api, project_d
     }
 
 
-def test_get_validation_schema_from_description_insert_deep(stubbed_db_api, hour_description):
-    validation_schema = stubbed_db_api.get_validation_schema_from_description(hour_description, is_update=True)
+def test_get_validation_schema_from_description_update_no_deep(stubbed_db_api, project_description):
+    validation_schema = stubbed_db_api.get_validation_schema_from_description(
+        project_description,
+        is_update=True,
+        deep_update=False
+    )
 
+    for key in [u"id", u"client", u"provisioned_hours", u"started_at"]:
+        assert key in validation_schema
+
+    assert validation_schema[u"id"] == {
+        u"required": False,
+        u"type": u"integer",
+        u"nullable": False
+    }
+
+    assert validation_schema[u"provisioned_hours"] == {
+        u"required": False,
+        u"type": u"float",
+        u"nullable": True
+    }
+
+    assert validation_schema[u"started_at"][u"type"] == u"datetime"
+    assert not validation_schema[u"started_at"][u"required"]
+    assert not validation_schema[u"started_at"][u"nullable"]
+    assert callable(validation_schema[u"started_at"][u"coerce"])
+
+    assert validation_schema[u"client"] == {
+        u"type": u"dict",
+        u"required": False,
+        u"nullable": False,
+        u"allow_unknown": True,
+        u"schema": {
+            u"id": {
+                u"required": False,
+                u"type": u"integer",
+                u"nullable": False
+            }
+        }
+    }
 
 def test__convert_python_types(stubbed_db_api):
     # Basic test, datetime.
