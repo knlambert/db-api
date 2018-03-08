@@ -55,7 +55,7 @@ class DBApi(object):
 
         return convert
 
-    def get_validation_schema_from_description(self, description, is_root=True, is_update=False):
+    def get_validation_schema_from_description(self, description, is_root=True, is_update=False, deep=0):
         """
         Get the list of columns reading the API description.
         Args:
@@ -63,6 +63,7 @@ class DBApi(object):
             is_root (boolean): If the description corresponds to the root collection (differs on how autoincrement
                 are handled).
             is_update (boolean): If the validation correspond to an update operation.
+            deep (int): Used to measure the recursivity.
 
         Returns:
             (list of tuples): List of fields (name, type).
@@ -70,27 +71,42 @@ class DBApi(object):
         schema = {}
 
         for field in description.get(u"fields"):
-            schema[field[u"name"]] = {
-                u"type": field[u"type"],
-                u"nullable": field[u"nullable"]
-            }
-            is_required = (not field[u"nullable"] and not is_update) and is_root
-            # If auto increment
-            if not field[u"nullable"] and field.get(u"autoincrement", False) and is_root:
-                is_required = False
+            is_foreign_field = (field[u"name"] == description.get(u"foreignField", False))
 
-            schema[field[u"name"]][u"required"] = is_required
+            if deep == 0 or is_foreign_field or is_update:
+                rule = {
+                    u"type": field[u"type"],
+                    u"nullable": field[u"nullable"]
+                }
+                is_required = not field[u"nullable"]
 
-            if field[u"type"] in [u"datetime", u"date"]:
-                schema[field[u"name"]][u"type"] = field[u"type"]
-                schema[field[u"name"]][u"coerce"] = self._get_timestamp_coerce(field[u"type"])
+                if is_update: # If update, nothing is required.
+                    is_required = False
 
-            elif u"nested_description" in field:
-                schema[field[u"name"]][u"type"] = u"dict"
-                schema[field[u"name"]][u"required"] = not is_update
-                schema[field[u"name"]][u"schema"] = self.get_validation_schema_from_description(
-                    description=field[u"nested_description"], is_root=False, is_update=is_update
-                )
+                else: # If insert
+                    # If insert on the root table and has autoincrement, not nullable, but not required.
+                    if is_root and field.get(u"autoincrement", False) and not is_foreign_field:
+                        is_required = False
+                    elif deep == 1 and is_foreign_field:
+                        is_required = True
+                    elif not is_root:
+                        is_required = False
+
+                rule[u"required"] = is_required
+
+                if field[u"type"] in [u"datetime", u"date"]:
+                    rule[u"type"] = field[u"type"]
+                    rule[u"coerce"] = self._get_timestamp_coerce(field[u"type"])
+
+                elif u"nested_description" in field:
+                    rule[u"type"] = u"dict"
+                    rule[u"required"] = not is_update
+
+                    rule[u"schema"] = self.get_validation_schema_from_description(
+                        description=field[u"nested_description"], is_root=False, is_update=is_update, deep=deep+1
+                    )
+
+                schema[field[u"name"]] = rule
 
         return schema
 
