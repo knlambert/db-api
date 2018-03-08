@@ -8,7 +8,8 @@ from .flask_utils import (
     flask_constructor_error,
     flask_check_and_inject_args,
     flask_check_and_inject_payload,
-    UPDATE_DELETE_API_VALIDATION_SCHEMA
+    UPDATE_API_VALIDATION_SCHEMA,
+    DELETE_API_VALIDATION_SCHEMA
 )
 from ..api_exception import ApiException
 from flask import Blueprint, make_response
@@ -58,7 +59,7 @@ class FlaskAdapter(object):
 
         @self._db_api_blueprint.route(u'/', methods=[u"PUT"])
         @self._flask_user_api.is_connected()
-        @flask_check_and_inject_args(UPDATE_DELETE_API_VALIDATION_SCHEMA)
+        @flask_check_and_inject_args(UPDATE_API_VALIDATION_SCHEMA)
         @flask_check_and_inject_payload()
         def update(args, payload):
             args[u"update"] = payload
@@ -70,7 +71,7 @@ class FlaskAdapter(object):
         @self._db_api_blueprint.route(u'/', methods=[u"DELETE"])
         @self._flask_user_api.is_connected()
         @self._flask_user_api.is_connected()
-        @flask_check_and_inject_args(UPDATE_DELETE_API_VALIDATION_SCHEMA)
+        @flask_check_and_inject_args(DELETE_API_VALIDATION_SCHEMA)
         def delete(args):
             return flask_construct_response(
                 self._db_api.delete(**args),
