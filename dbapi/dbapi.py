@@ -101,6 +101,8 @@ class DBApi(object):
                 elif u"nested_description" in field:
                     rule[u"type"] = u"dict"
                     rule[u"required"] = not is_update
+                    if not is_update:
+                        rule[u"allow_unknown"] = True
 
                     rule[u"schema"] = self.get_validation_schema_from_description(
                         description=field[u"nested_description"], is_root=False, is_update=is_update, deep=deep+1

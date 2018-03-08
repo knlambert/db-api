@@ -12,19 +12,51 @@ def stubbed_db_api():
 
 
 @fixture(scope=u"function")
+def hour_description():
+    return {u'fields': [
+        {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
+        {u'nullable': True, u'type': u'string', u'name': u'issue', u'primary_key': False},
+        {u'nullable': False, u'type': u'datetime', u'name': u'started_at', u'primary_key': False},
+        {u'autoincrement': False, u'nullable': False, u'type': u'integer', u'name': u'minutes', u'primary_key': False},
+        {u'nullable': True, u'type': u'string', u'name': u'comments', u'primary_key': False},
+        {u'name': u'project', u'nullable': False, u'autoincrement': False, u'nested_description': {u'fields': [
+            {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
+            {u'nullable': False, u'type': u'string', u'name': u'name', u'primary_key': False},
+            {u'autoincrement': False, u'nullable': False, u'type': u'integer', u'name': u'client',
+             u'primary_key': False},
+            {u'autoincrement': False, u'nullable': True, u'type': u'integer', u'name': u'provisioned_hours',
+             u'primary_key': False},
+            {u'nullable': False, u'type': u'datetime', u'name': u'started_at', u'primary_key': False},
+            {u'nullable': True, u'type': u'string', u'name': u'code', u'primary_key': False}], u"foreignField": u"id",
+            u'as': u'project',
+            u'table': u'project'},
+         u'type': u'integer', u'primary_key': False},
+        {u'name': u'affected_to', u'nullable': False, u'autoincrement': False, u'nested_description': {u'fields': [
+            {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
+            {u'nullable': False, u'type': u'string', u'name': u'email', u'primary_key': False},
+            {u'nullable': False, u'type': u'string', u'name': u'name', u'primary_key': False},
+            {u'autoincrement': False, u'nullable': False, u'type': u'integer', u'name': u'min_hours_per_week',
+             u'primary_key': False},
+            {u'autoincrement': False, u'nullable': False, u'type': u'integer', u'name': u'default_role',
+             u'primary_key': False}], u'as': u'affected_to', u"foreignField": u"id", u'table': u'_user'},
+         u'type': u'integer',
+         u'primary_key': False}], u'as': u'hour', u'table': u'hour'}
+
+
+@fixture(scope=u"function")
 def project_description():
     return {u'fields': [
         {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
         {u'name': u'client', u'nullable': False, u'autoincrement': False, u'nested_description': {u'fields': [
             {u'autoincrement': True, u'nullable': False, u'type': u'integer', u'name': u'id', u'primary_key': True},
             {u'nullable': False, u'type': u'string', u'name': u'name', u'primary_key': False}], u'as': u'client',
-                                                                                                  u'table': u'client'},
+            u"foreignField": u"id", u'table': u'client'},
          u'type': u'integer', u'primary_key': False},
         {u'autoincrement': False, u'nullable': True, u'type': u'float', u'name': u'provisioned_hours',
          u'primary_key': False},
         {u'nullable': False, u'type': u'datetime', u'name': u'started_at', u'primary_key': False},
         {u'nullable': True, u'type': u'string', u'name': u'code', u'primary_key': False}], u'as': u'project',
-            u'table': u'project'}
+        u'table': u'project'}
 
 
 def test_get_validation_schema_from_description(stubbed_db_api, project_description):
@@ -54,18 +86,13 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
         u"type": u"dict",
         u"required": True,
         u"nullable": False,
+        u"allow_unknown": True,
         u"schema": {
             u"id": {
-                u"required": False,
+                u"required": True,
                 u"type": u"integer",
                 u"nullable": False
-            },
-            u"name": {
-                u"required": False,
-                u"type": u"string",
-                u"nullable": False
             }
-
         }
     }
 
@@ -111,6 +138,11 @@ def test_get_validation_schema_from_description_update(stubbed_db_api, project_d
 
         }
     }
+
+
+def test_get_validation_schema_from_description_insert_deep(stubbed_db_api, hour_description):
+    validation_schema = stubbed_db_api.get_validation_schema_from_description(hour_description, is_update=True)
+
 
 def test__convert_python_types(stubbed_db_api):
     # Basic test, datetime.
