@@ -4,7 +4,6 @@ Module which contains the API class.
 """
 
 import csv
-import time
 import datetime
 import StringIO
 import calendar
@@ -116,6 +115,29 @@ class DBApi(object):
 
         return schema
 
+    def _get_columns_name_types_from_description(self, description, parent=None):
+        """
+        Return a list of columns with their types from the description.
+        Args:
+            description (dict): The description to analyse.
+            parent (list of unicode): The parent prefix if there is one.
+        Returns:
+            (list of (unicode, unicode): A list of tuples column name / type.
+        """
+        result = []
+        parent = parent or []
+
+        for field in description.get(u"fields", []):
+            if u"nested_description" in field:
+                result.extend(self._get_columns_name_types_from_description(
+                    field.get(u"nested_description"),
+                    parent + [field.get(u"name")]
+                ))
+            else:
+                result.append((u".".join(parent + [field.get(u"name")]), field.get(u"type")))
+
+        return result
+
     def export(self, filter=None, projection=None, lookup=None, auto_lookup=0, order=None, order_by=None):
         output = StringIO.StringIO()
         encoding = u"utf-8"
@@ -125,7 +147,7 @@ class DBApi(object):
             delimiter="\t"
         )
         description = self._collection.get_description(lookup, auto_lookup)
-        col_desc = self.get_validation_schema_from_description(description)
+        col_desc = self._get_columns_name_types_from_description(description)
 
         def fetch(offset):
             return self.list(filter, projection, lookup, auto_lookup, order, order_by, limit=100, offset=offset)
@@ -145,7 +167,7 @@ class DBApi(object):
         for item in fetch_iterator():
             line = []
             for col_name, col_typ in col_desc:
-                value = item.get(col_name)
+                value = item.get(col_name) or u""
                 if col_typ == u"datetime":
                     value = datetime.datetime.utcfromtimestamp(
                         int(value)
@@ -296,6 +318,8 @@ class DBApi(object):
         self.before(u"list")
         order = order or []
         order_by = order_by or []
+
+        
 
         items = list(self._collection.find(**{
             u"query": filter,

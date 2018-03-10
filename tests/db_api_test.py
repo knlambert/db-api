@@ -59,6 +59,18 @@ def project_description():
         u'table': u'project'}
 
 
+def test__get_columns_name_types_from_description(stubbed_db_api, project_description):
+    result = stubbed_db_api._get_columns_name_types_from_description(project_description)
+    assert result == [
+        (u"id", u"integer"),
+        (u"client.id", u"integer"),
+        (u"client.name", u"string"),
+        (u"provisioned_hours", u"float"),
+        (u"started_at", u"datetime"),
+        (u"code", u"string")
+    ]
+
+
 def test_get_validation_schema_from_description(stubbed_db_api, project_description):
     validation_schema = stubbed_db_api.get_validation_schema_from_description(project_description)
 
