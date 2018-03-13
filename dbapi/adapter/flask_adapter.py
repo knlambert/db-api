@@ -38,7 +38,7 @@ class FlaskAdapter(object):
         self._db_api_blueprint = Blueprint(u'{}_db_api'.format(self._db_api._collection._table.name), __name__)
 
         @self._db_api_blueprint.route(u'/', methods=[u"GET"])
-        # @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected()
         @flask_check_and_inject_args(LIST_API_VALIDATION_SCHEMA)
         def find(args):
             return flask_construct_response(
@@ -69,7 +69,6 @@ class FlaskAdapter(object):
             )
 
         @self._db_api_blueprint.route(u'/', methods=[u"DELETE"])
-        @self._flask_user_api.is_connected()
         @self._flask_user_api.is_connected()
         @flask_check_and_inject_args(DELETE_API_VALIDATION_SCHEMA)
         def delete(args):
