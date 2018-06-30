@@ -15,4 +15,4 @@ setup(
         u"sqlcollection>=0.1.4,<1",
         u"user_api>=0.4.1,<1"
     ]
-)q
+)
