@@ -1,0 +1,22 @@
+sudo: false
+langage: python
+cache: pip
+python:
+- 2.7
+- 3.5
+install:
+- pip install -r requirements.txt --user
+script:
+- pytest tests
+before_deploy: pip install twine --user
+deploy:
+  provider: pypi
+  user: sqlcollection
+  edge:
+    branch: v1.8.45
+  password:
+    secure: qgmPR2ssZTc6k7WZcFbIybTqqAkkOlxPD8+ACDAWWeaIZ9pgrWQa5WbGdfZKoqZAXd3brCsc0oJZynAeG13YN9Akfw4ZLBBvCh2mh8H3dnVRHddHg9XObVKfL8V+5XRR/xbcZCCsp7/NBy8V3cVnX6PJazMl9/ON0k5PSkXIla0rmrOpMYQpZ2u0Jk4TVkO2l2lTV1tbHMmh+8BQOkd5WrU6FmDP53vr+9pJITORTLRukkiIgNJeEtRcHzfL5LUnujOg4NOl8BG7dpF6N+VFNOUgcTLu0jHjaZSf40fb1hyRl7yEuekuBBRpjmpivl4XOGcICY5dBhsChxpYprJNG+FgX16iG76lDO23qhPtrAGA+ZZaQZHMFXztRfKdzRYaSwa62meukb0AZEaa5gNchtIkaPvDUXAWsZjykSJa2fKqIQYOsgkluu/bGSiFa1EaUpSKMaHlA9NLukJQ9C/jmvBgdto0JjcP+jhqnehnvS8B+PMx9vJT1YJ3u9TPZUWmHyctx7q6F02Jn1I0N0aBwyaMaOX5ALhyBen3OJILVHsJmPG2qAEz0aEVOhq6WR9/93TZteeCo4ugs4sDl3d++eHhCDQ/leN+EjUe0BnYDiGYOoj3BV00DSUII2hiz4gDfmYAli/dIaSTCPazSA2fZ5k9oqgnofDA2OqExL1QsEk=
+  on:
+    branch: master
+    tags: true
+    all_branches: true

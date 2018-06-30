@@ -8,43 +8,40 @@ from sqlcollection.client import Client
 from dbapi.dbapi import DBApi
 
 client = Client(url=u'mysql://root:localroot1234@127.0.0.1/')
-db = client.hours_count
+DB = client.hours_count
 
 # Create user api object
-USER_API = user_api.UserApi(
-    db_host=u"127.0.0.1",
-    db_user=u"root",
-    db_passwd=u"localroot1234",
-    db_name=u"user_api",
+USER_API = user_api.create_user_api(
+    db_url=u"mysql://root:localroot1234@127.0.0.1/user_api",
     jwt_secret=u"DUMMY",
     jwt_lifetime=30 * 24 * 3600
 )
-flask_user_api = USER_API.get_flask_adapter()
 
+FLASK_USER_API = USER_API.get_flask_user_api()
 
 APP = Flask(__name__)
-APP.register_blueprint(flask_user_api.construct_blueprint(), url_prefix=u"/api/users")
 
-services = [
-    (u"hour", u"hours"),
-    (u"project", u"projects")
-    # (u"project_assignement", u"project-assignements")
-]
+DB_API_CONFIG = {
+    u"projects": DBApi(DB, u"project"),
+    u"clients": DBApi(DB, u"client"),
+    u"hours": DBApi(DB, u"hour")
+}
 
-for table_name, service_name in services:
 
-    db_blueprint = DBApi(db, table_name).get_flask_adapter(flask_user_api).construct_blueprint()
+for service_name, db_api in list(DB_API_CONFIG.items()):
+    db_blueprint = db_api.get_flask_adapter(FLASK_USER_API).construct_blueprint()
 
-    @db_blueprint.errorhandler(user_api.ApiException)
-    def user_api_error_wrapper(exception):
-        return flask_user_api.api_error_handler(exception)
+    FLASK_USER_API.add_api_error_handler(db_blueprint)
 
+    @db_blueprint.before_request
+    @FLASK_USER_API.is_connected(login_url=u"/login")
+    def is_connected():
+        pass
 
     APP.register_blueprint(
         db_blueprint,
-        url_prefix=u'/api/{}'.format(service_name)
+        url_prefix=u'/api/db/{}'.format(service_name)
     )
-
 
 if __name__ == u"__main__":
     APP.run(debug=True)
