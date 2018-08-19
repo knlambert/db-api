@@ -7,26 +7,30 @@ from flask import Flask
 from sqlcollection.client import Client
 from dbapi.dbapi import DBApi
 
-client = Client(url=u'mysql://root:localroot1234@127.0.0.1/')
-DB = client.hours_count
+client = Client(url=u'mysql+mysqlconnector://root:localroot1234@127.0.0.1/')
 
 # Create user api object
 USER_API = user_api.create_user_api(
-    db_url=u"mysql://root:localroot1234@127.0.0.1/user_api",
-    jwt_secret=u"DUMMY",
+    db_url=u"mysql+mysqlconnector://root:localroot1234@127.0.0.1/user_api",
+    jwt_secret=u"dummy_secret",
     jwt_lifetime=30 * 24 * 3600
 )
+
+flask_user_api = USER_API.get_flask_user_api()
+
 
 FLASK_USER_API = USER_API.get_flask_user_api()
 
 APP = Flask(__name__)
 
-DB_API_CONFIG = {
-    u"projects": DBApi(DB, u"project"),
-    u"clients": DBApi(DB, u"client"),
-    u"hours": DBApi(DB, u"hour")
-}
 
+# Register the blueprint
+APP.register_blueprint(flask_user_api.construct_user_api_blueprint(), url_prefix=u"/api/users")
+APP.register_blueprint(flask_user_api.construct_role_api_blueprint(), url_prefix=u"/api/roles")
+
+DB_API_CONFIG = {
+    u"users": DBApi(client, u"_user", database_name="user_api")
+}
 
 for service_name, db_api in list(DB_API_CONFIG.items()):
     db_blueprint = db_api.get_flask_adapter(FLASK_USER_API).construct_blueprint()
