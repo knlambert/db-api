@@ -77,7 +77,7 @@ class DBApi(object):
 
         return convert
 
-    def get_validation_schema_from_description(
+    def get_validation_schema(
         self,
         description: Dict, 
         is_root: bool = True, 
@@ -142,7 +142,7 @@ class DBApi(object):
                     if not is_update or not deep_update:
                         rule["purge_unknown"] = True
 
-                    rule["schema"] = self.get_validation_schema_from_description(
+                    rule["schema"] = self.get_validation_schema(
                         description=field["nested_description"],
                         is_root=False,
                         is_update=is_update,
@@ -297,7 +297,7 @@ class DBApi(object):
         """
         collection = self._get_collection(database_name)
         description = collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
-        validation_schema = self.get_validation_schema_from_description(
+        validation_schema = self.get_validation_schema(
             description, is_update=is_update, deep_update=deep_update
         )
         validator = Validator(validation_schema)
@@ -387,7 +387,7 @@ class DBApi(object):
         self.before("description")
         collection = self._get_collection(database_name)
         description = collection.get_description(lookup, auto_lookup)
-        return self.get_validation_schema_from_description(
+        return self.get_validation_schema(
             description,
             is_update
         )
