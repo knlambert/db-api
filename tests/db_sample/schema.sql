@@ -1,15 +1,16 @@
+
+
 CREATE TABLE client (
-    id INTEGER AUTO_INCREMENT,
-    name VARCHAR(255) NOT NULL,
-    PRIMARY KEY(id)
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE project (
-    id INTEGER AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     client INT NOT NULL,
-    PRIMARY KEY (id),
-    FOREIGN KEY fk_project_client_project_id (client) 
-    REFERENCES client(id)
+    CONSTRAINT fk_project_client_project_id
+        FOREIGN KEY  (client) 
+        REFERENCES client (id)
 );
 
