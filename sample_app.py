@@ -4,7 +4,7 @@ Helper code.
 """
 from flask import Flask
 from sqlcollection.client import Client
-from user_api import create_user_api
+from user_api.helpers import create_user_api
 from dbapi.dbapi import DBApi
 
 user_api = create_user_api(

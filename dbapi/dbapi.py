@@ -57,7 +57,6 @@ class DBApi(object):
         Returns:
             (sqlcollection.db.DB): The DB object generated.
         """
-        print(self._client.app_tenant_1)
         db = getattr(
             self._client,
             (self._database_name or "{}{}".format(self._prefix, customer_id))

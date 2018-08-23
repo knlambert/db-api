@@ -12,7 +12,7 @@ CREATE DATABASE app_tenant_1;
 CREATE DATABASE app_tenant_2;
 \c app_tenant_2;
 \i schema.sql;
-\i values/values_1.sql;
+\i values/values_2.sql;
 
 
 CREATE USER test_user WITH PASSWORD 'password';
