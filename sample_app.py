@@ -8,18 +8,18 @@ from user_api import create_user_api
 from dbapi.dbapi import DBApi
 
 user_api = create_user_api(
-    db_url=u"postgresql://test_user:password@127.0.0.1/user_api",
+    db_url=u"postgresql://postgres:postgresql@127.0.0.1/user_api",
     jwt_secret=u"dummy_secret"
 )
 
 
-client = Client(url=u'postgresql://test_user:password@127.0.0.1:5432')
+client = Client(url=u'postgresql+psycopg2://postgres:postgresql@127.0.0.1:5432')
 
 APP = Flask(__name__)
 
 DB_API_CONFIG = {
-    u"projects": DBApi(client, u"project", database_name="toolbox_1"),
-    u"clients": DBApi(client, u"client", database_name="toolbox_1")
+    u"projects": DBApi(client, u"project", prefix="app_tenant_"),
+    u"clients": DBApi(client, u"client", prefix="app_tenant_")
 }
 
 flask_user_api = user_api.get_flask_user_api()

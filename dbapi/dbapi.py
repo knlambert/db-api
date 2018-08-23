@@ -26,7 +26,8 @@ class DBApi(object):
         self,
         client: sqlcollection.client.Client,
         table_name: str,
-        database_name: str = None
+        database_name: str = None,
+        prefix: str = None
     ):
         """
         This is the constructor of the API Class.
@@ -37,23 +38,30 @@ class DBApi(object):
                 with.
             database_name (str): The name of the DB where the table 
                 can be found.
+            prefix (str): The prefix corresponding to the name of the dynamic
+                databased used for each tenant.
         """
         self._client = client
         self._table_name = table_name
         self._database_name = database_name
+        self._prefix = prefix
 
     def before(self, method_name):
         pass
 
-    def _get_collection(self, database_name: str = None):
+    def _get_collection(self, customer_id: int = None):
         """
         Construct the DB object to connect to the table DB.
         Args:
-            database_name (str): The name of the database to connect to.
+            customer_id (int): The name of the customer.
         Returns:
             (sqlcollection.db.DB): The DB object generated.
         """
-        db = getattr(self._client, database_name or self._database_name)
+        print(self._client.app_tenant_1)
+        db = getattr(
+            self._client,
+            (self._database_name or "{}{}".format(self._prefix, customer_id))
+        )
         return getattr(db, self._table_name)
 
     @staticmethod

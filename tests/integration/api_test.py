@@ -27,9 +27,13 @@ def headers() -> Dict:
     }
 
 def test_list(session: requests.Session, headers: Dict):
-    result = session.get(
+    ret = session.get(
         headers=headers,
-        url="http://127.0.0.1:5000/api/users"
+        url="http://127.0.0.1:5000/api/db/projects"
     )
-    print(result)
-    pass
+    result = json.loads(ret.text)
+    assert result["items"][0] == {
+        "id": 1,
+        "client": 1,
+        "name": "A350"
+    }
