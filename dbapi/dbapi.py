@@ -282,7 +282,8 @@ class DBApi(object):
         lookup: List[Dict],
         auto_lookup: int = 0,
         is_update: bool = False,
-        deep_update: bool = False
+        deep_update: bool = False,
+        database_name: str = None
     ) -> Dict:
         """
         Validate a document regarding the database.
@@ -295,15 +296,20 @@ class DBApi(object):
                 to an update operation.
             deep_update (bool): Allows or not to perform an
                 update on sub fields.
+            database_name (str): The name of the database to use.
 
         Returns:
             (Dict): The formatted document.
 
         Raises:
-            ApiUnprocessableEntity: If the document doesn't comply to the required format.
+            ApiUnprocessableEntity: If the document doesn't comply to the 
+                required format.
         """
         collection = self._get_collection(database_name)
-        description = collection.get_description(lookup=lookup, auto_lookup=auto_lookup)
+        description = collection.get_description(
+            lookup=lookup,
+            auto_lookup=auto_lookup
+        )
         validation_schema = self.get_validation_schema(
             description, is_update=is_update, deep_update=deep_update
         )
@@ -338,7 +344,12 @@ class DBApi(object):
         """
         self.before("create")
         try:
-            document = self.validate(document, lookup, auto_lookup)
+            document = self.validate(
+                document, 
+                lookup, 
+                auto_lookup, 
+                database_name=database_name
+            )
             collection = self._get_collection(database_name)
             result = collection.insert_one(document, lookup, auto_lookup)
         except IntegrityError:
