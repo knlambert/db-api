@@ -52,6 +52,7 @@ def test_list_isolated_tenants(
     ret = session_1.get(
         headers=headers,
         url="http://127.0.0.1:5000/api/db/projects?auto_lookup=1"
+            "&order_by=1&order=id"
     )
     result = json.loads(ret.text)
     assert result["items"][0] == {
@@ -66,17 +67,17 @@ def test_list_isolated_tenants(
     ret = session_2.get(
         headers=headers,
         url="http://127.0.0.1:5000/api/db/projects?auto_lookup=1"
+            "&order_by=1&order=id"
     )
     result = json.loads(ret.text)
-    assert result["items"][0] == {
-        "id": 1,
+    assert result["items"][1] == {
+        "id": 2,
         "client": {
             "id": 1,
             "name": "Boeing"
         },
-        "name": "747"
+        "name": "737"
     }
-
 
 def test_insert(
     session_1: requests.Session,
@@ -96,7 +97,23 @@ def test_insert(
         })
     )
     result = json.loads(ret.text)
-    print(result)
     assert result == {
         "inserted_id": 3
     }
+
+def test_update(
+    session_1: requests.Session,
+    headers: Dict
+):
+    from_initial_state()
+    ret = session_1.put(
+        headers=headers,
+        url="http://127.0.0.1:5000/api/db/projects/?auto_lookup=1&filter={'id': 2}",
+        data=json.dumps({
+            "client.id": 2
+        })
+    )
+
+    result = json.loads(ret.text)
+    print(ret)
+

@@ -25,4 +25,3 @@ class Client(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255))
-
