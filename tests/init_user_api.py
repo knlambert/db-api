@@ -1,7 +1,7 @@
 # coding utf-8
 
 from user_api.helpers import init_db, add_user, add_customer
-db_url = "postgresql://postgres:postgresql@127.0.0.1"
+db_url = "postgresql://postgres@127.0.0.1"
 init_db(db_url=db_url, drop_before=True)
 # User tenant 1.
 add_customer(db_url, 1)
