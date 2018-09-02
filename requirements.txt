@@ -4,7 +4,7 @@ mock==2.0.0
 PyJWT==1.6.4
 pytest==3.6.2
 SQLAlchemy==1.2.9
-git+https://github.com/knlambert/sqlcollection.git@develop
-git+https://github.com/knlambert/user-api.git@develop
+user-api>=0.5.0,<0.6
+sqlcollection>=0.2.0,<0.3
 requests==2.19.1
 psycopg2==2.7.5
