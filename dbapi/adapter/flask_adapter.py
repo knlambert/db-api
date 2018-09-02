@@ -35,22 +35,26 @@ class FlaskAdapter(object):
         Returns:
             (Blueprint): The constructed blueprint.
         """
-        self._db_api_blueprint = Blueprint(u'{}_db_api'.format(self._db_api._collection._table.name), __name__)
+        self._db_api_blueprint = Blueprint(u'{}_db_api'.format(
+            self._db_api._table_name
+        ), __name__)
 
         @self._db_api_blueprint.route(u'/', methods=[u"GET"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(LIST_API_VALIDATION_SCHEMA)
-        def find(args):
+        def find(args, token):
+            args[u"database_name"] = str(token["customer"]["id"])
             return flask_construct_response(
                 self._db_api.list(**args),
                 200
             )
 
         @self._db_api_blueprint.route(u'/', methods=[u"POST"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(AUTO_LOOKUP_SCHEMA)
         @flask_check_and_inject_payload()
-        def create(args, payload):
+        def create(args, payload, token):
+            args[u"database_name"] = str(token["customer"]["id"])
             args[u"document"] = payload
             return flask_construct_response(
                 self._db_api.create(**args),
@@ -58,40 +62,45 @@ class FlaskAdapter(object):
             )
 
         @self._db_api_blueprint.route(u'/', methods=[u"PUT"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(UPDATE_API_VALIDATION_SCHEMA)
         @flask_check_and_inject_payload()
-        def update(args, payload):
+        def update(args, payload, token):
             args[u"update"] = payload
+            args[u"database_name"] = str(token["customer"]["id"])
             return flask_construct_response(
                 self._db_api.update(**args),
                 code=200
             )
 
         @self._db_api_blueprint.route(u'/', methods=[u"DELETE"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(DELETE_API_VALIDATION_SCHEMA)
-        def delete(args):
+        def delete(args, token):
+            args[u"database_name"] = str(token["customer"]["id"])
             return flask_construct_response(
                 self._db_api.delete(**args),
                 code=202
             )
 
         @self._db_api_blueprint.route(u'/description', methods=[u"GET"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(AUTO_LOOKUP_SCHEMA)
-        def description(args):
+        def description(args, token):
+            args[u"database_name"] = str(token["customer"]["id"])
             return flask_construct_response(
                 self._db_api.description(**args),
                 code=200
             )
 
         @self._db_api_blueprint.route(u'/export', methods=[u"GET"])
-        @self._flask_user_api.is_connected()
+        @self._flask_user_api.is_connected(inject_token=True)
         @flask_check_and_inject_args(LIST_API_VALIDATION_SCHEMA)
-        def export(args):
+        def export(args, token):
+            args[u"database_name"] = str(token["customer"]["id"])
             output = make_response(self._db_api.export(**args))
-            output.headers[U"Content-Disposition"] = U"attachment; filename=export.csv"
+            output.headers[U"Content-Disposition"] = "attachment; "\
+                "filename=export.csv"
             output.headers[U"Content-type"] = U"text/csv"
             return output, 200
 
