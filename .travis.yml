@@ -1,11 +1,15 @@
 sudo: false
-langage: python
-cache: pip
+language: python
+python:
+  - "3.6"
 install:
-- pip install -r requirements.txt --user
+  - pip3 install -r requirements.txt
+  - psql -c 'CREATE DATABASE app_tenant_1;' -U postgres
+  - psql -c 'CREATE DATABASE app_tenant_2;' -U postgres
+  - python3 tests/init_user_api.py
 script:
-- python -m pytest tests
-before_deploy: pip install twine --user
+  - nohup python3 test_app.py &
+  - python3 -m pytest tests
 deploy:
   provider: pypi
   user: sqlcollection
@@ -17,3 +21,8 @@ deploy:
     branch: master
     tags: true
     all_branches: true
+services:
+  - postgresql
+env:
+  global:
+  - PGPORT=5432

@@ -10,7 +10,12 @@ from flask import jsonify, request
 from collections import OrderedDict
 
 
-def flask_constructor_error(message, status=500, custom_error_code=None, error_payload=None):
+def flask_constructor_error(
+    message: str, 
+    status: int = 500, 
+    custom_error_code: str = None,
+    error_payload: dict = None
+):
     """
     Construct Json Error returned message.
     """
@@ -33,9 +38,17 @@ def flask_construct_response(item, code=200):
     return jsonify(item), code
 
 
-to_dict = lambda x: json.loads(x, encoding=u"utf8")
-to_unicode_list = lambda x: x.split(u",")
-to_int_list = lambda x: [int(val) for val in x.split(u",")]
+def to_dict(string: str):
+    return json.loads(string, encoding="utf8")
+
+
+def to_str_list(string: str):
+    return string.split(",")
+
+
+def to_int_list(string: str):
+    return [int(val) for val in string.split(",")]
+
 
 LIST_API_VALIDATION_SCHEMA = {
     u"projection": {
@@ -52,7 +65,7 @@ LIST_API_VALIDATION_SCHEMA = {
     },
     u"order": {
         u"type": u"list",
-        u"coerce": to_unicode_list
+        u"coerce": to_str_list
     },
     u"order_by": {
         u"type": u"list",
@@ -82,7 +95,7 @@ DEEP_UPDATE = {
         u"type": u"boolean",
         u"required": False,
         u"default": False,
-        u"coerce": lambda x: unicode(x).lower() == u"true"
+        u"coerce": lambda x: str(x).lower() == u"true"
     }
 }
 
@@ -181,12 +194,19 @@ def flask_check_and_inject_payload(validation_schema=None):
         @wraps(funct)
         def wrapper(*args, **kwargs):
 
-            if request.headers.get(u"Content-Type") and u"application/json" in request.headers.get(u"Content-Type"):
+            if (
+                request.headers.get(u"Content-Type") and 
+                "application/json" in request.headers.get(u"Content-Type")
+            ):
                 try:
-                    args_dict = json.loads(request.data, object_pairs_hook=OrderedDict, encoding=u"utf8")
+                    args_dict = json.loads(
+                        request.data,
+                        object_pairs_hook=OrderedDict,
+                        encoding=u"utf8"
+                    )
                 except ValueError as err:
                     return flask_constructor_error(
-                        message=err.message,
+                        message=str(err),
                         custom_error_code=u"WRONG_PAYLOAD",
                         status=422
                     )

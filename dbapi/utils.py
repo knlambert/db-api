@@ -6,16 +6,14 @@ This module contains various utils function at global usage.
 import json
 import logging
 import math
-import random
-import time
 
 
 def init_logger(pattern, pattern_debug, level):
     """
     Init the logger, loading configuration from config file.
     Args:
-        pattern (unicode): Pattern for the logger.
-        pattern_debug (unicode): Pattern for the logger in debug mode.
+        pattern (str): Pattern for the logger.
+        pattern_debug (str): Pattern for the logger in debug mode.
         level (lvl): Level of the logger.
     """
     pattern = pattern_debug if level == logging.DEBUG else pattern
@@ -37,7 +35,7 @@ def json_set(item, path, value):
     Set the value corresponding to the path in a dict.
     Arguments:
         item (dict): The object where we want to put a field.
-        path (unicode): The path separated with dots to the field.
+        path (str): The path separated with dots to the field.
         value: The value to set on the field.
     Return:
         (dict): The updated object.
@@ -57,7 +55,7 @@ def json_get(item, path, default=None):
     Return the path of the field in a dict.
     Arguments:
         item (dict): The object where we want to put a field.
-        path (unicode): The path separated with dots to the field.
+        path (str): The path separated with dots to the field.
         default: default value if path not found.
     Return:
         The value.
@@ -76,7 +74,7 @@ def json_to_one_level(obj, parent=None):
     Take a dict and update all the path to be on one level.
     Arguments:
         output (dict): The dict to proceed.
-        parent (unicode): The parent key. Used only with recursion.
+        parent (str): The parent key. Used only with recursion.
     Return:
         dict: The updated obj.
     """
@@ -87,16 +85,20 @@ def json_to_one_level(obj, parent=None):
             if parent is None:
                 output.update(json_to_one_level(value, key))
             else:
-                output.update(json_to_one_level(value, u".".join([parent, key])))
+                output.update(
+                    json_to_one_level(value, u".".join([parent, key]))
+                )
         elif isinstance(value, list):
             for index, item in enumerate(value):
                 item = {
-                    unicode(index): item
+                    str(index): item
                 }
                 if parent is None:
                     output.update(json_to_one_level(item, u".".join([key])))
                 else:
-                    output.update(json_to_one_level(item, u".".join([parent, key])))
+                    output.update(
+                        json_to_one_level(item, u".".join([parent, key]))
+                    )
         else:
             if parent is not None:
                 output[u".".join([parent, key])] = value
@@ -107,7 +109,8 @@ def json_to_one_level(obj, parent=None):
 
 def sublist_split(items, parts=None, count_per_sublist=None):
     """
-    This method split a list of items in several sub lists to make paralleling process easier.
+    This method split a list of items in several sub lists to make paralleling 
+        process easier.
 
     Args:
         items (list): A list of items to split in parts..
@@ -118,8 +121,11 @@ def sublist_split(items, parts=None, count_per_sublist=None):
         (list): A list of lists.
     """
     # XOR
-    if not ((parts and not count_per_sublist) or (not parts and count_per_sublist)):
-        raise ValueError(u"You need to specify parts or count_per_sublist parameters")
+    if not (
+        (parts and not count_per_sublist) or (not parts and count_per_sublist)
+    ):
+        raise ValueError(u"You need to specify parts or count_per_sublist \
+            parameters")
 
     output = []
 
@@ -131,7 +137,9 @@ def sublist_split(items, parts=None, count_per_sublist=None):
     if count_per_sublist:
         parts = int(math.ceil(len(items) / count_per_sublist))
         for index in range(0, parts + 1):
-            sub_part = items[index * count_per_sublist:index * count_per_sublist + count_per_sublist]
+            sub_part = items[
+                index * count_per_sublist:index * count_per_sublist +
+                count_per_sublist]
             if sub_part:
                 output.append(sub_part)
     return output
@@ -154,19 +162,34 @@ def get_json_differences(item_a, item_b):
     obj_b_items = json_to_one_level(item_b).items()
     obj_a_keys = [item[0] for item in obj_a_items]
     obj_b_keys = [item[0] for item in obj_b_items]
-    updated = [(key, value) for key, value in obj_b_items if key in obj_a_keys and value != item_a[key]]
-    removed = [(key, value) for key, value in obj_a_items if key not in obj_b_keys]
-    added = [(key, value) for key, value in obj_b_items if key not in obj_a_keys]
+    updated = [
+        (key, value) 
+        for key, value in obj_b_items 
+        if key in obj_a_keys and value != item_a[key]
+    ]
+    removed = [
+        (key, value) 
+        for key, value in obj_a_items 
+        if key not in obj_b_keys
+    ]
+    added = [
+        (key, value) 
+        for key, value in obj_b_items 
+        if key not in obj_a_keys
+    ]
     return removed, updated, added
 
 
 def check_and_get_data(data, rules, strict=False):
     """
-    This methods check a payload to see if some rules are valid (Does have a specific parameter, is it required, ...)
+    This methods check a payload to see if some rules are valid (Does have a 
+        specific parameter, is it required, ...)
     Args:
         data (dict): The data to check.
-        rules (list): A list of tuples (path_to_field(unicode), type, is_required(bool)).
-        strict (boolean): If strict is false, the function try to cast. Else it throws an error.
+        rules (list): A list of tuples (path_to_field(str), type, 
+            is_required(bool)).
+        strict (boolean): If strict is false, the function try to cast. 
+            Else it throws an error.
 
     Returns:
         (tuple): A tuple of three lists : (data, missing, wrong)
@@ -178,17 +201,23 @@ def check_and_get_data(data, rules, strict=False):
         """
         Sub method to check rules.
         Args:
-            field (unicode): The field path.
+            field (str): The field path.
             required_types (list): The types we want to get.
             is_required (boolean): Is it required or not.
             default_val: An eventual default value if the thing is not there.
         """
         # Transform in list if necessary.
-        required_types = required_types if isinstance(required_types, list) else [required_types]
+        required_types = required_types if isinstance(
+            required_types, list
+        ) else [required_types]
 
         # Get the value
         value = json_get(data, field)
-        if not strict and isinstance(value, list) and list not in required_types and len(value) == 1:
+        if (
+            not strict and isinstance(value, list) and 
+            list not in required_types 
+            and len(value) == 1
+        ):
             value = value[0]
 
         # test if value exist, knowing it is required.
@@ -208,7 +237,7 @@ def check_and_get_data(data, rules, strict=False):
         if value is not None and not type_found and not strict:
             for typ in required_types:
                 try:
-                    if typ is dict and isinstance(value, (unicode, str)):
+                    if typ is dict and isinstance(value, str):
                         value = json.loads(value)
 
                     elif callable(typ):
@@ -236,7 +265,7 @@ def check_string_list_param(value):
     """
     This method parse a string into a list.
     Args:
-        value (uniode): The list to parse.
+        value (string): The list to parse.
 
     Returns:
         (list): The parsed list.
@@ -245,7 +274,7 @@ def check_string_list_param(value):
     if not tab:
         return False
 
-    return [unicode(item) for item in tab]
+    return [str(item) for item in tab]
 
 
 def check_int_list_param(value):

@@ -71,8 +71,8 @@ def test__get_columns_name_types_from_description(stubbed_db_api, project_descri
     ]
 
 
-def test_get_validation_schema_from_description(stubbed_db_api, project_description):
-    validation_schema = stubbed_db_api.get_validation_schema_from_description(project_description)
+def test_get_validation_schema(stubbed_db_api, project_description):
+    validation_schema = stubbed_db_api.get_validation_schema(project_description)
 
     for key in [u"id", u"client", u"provisioned_hours", u"started_at"]:
         assert key in validation_schema
@@ -109,8 +109,8 @@ def test_get_validation_schema_from_description(stubbed_db_api, project_descript
     }
 
 
-def test_get_validation_schema_from_description_update(stubbed_db_api, project_description):
-    validation_schema = stubbed_db_api.get_validation_schema_from_description(project_description, is_update=True)
+def test_get_validation_schema_update(stubbed_db_api, project_description):
+    validation_schema = stubbed_db_api.get_validation_schema(project_description, is_update=True)
 
     for key in [u"id", u"client", u"provisioned_hours", u"started_at"]:
         assert key in validation_schema
@@ -152,8 +152,8 @@ def test_get_validation_schema_from_description_update(stubbed_db_api, project_d
     }
 
 
-def test_get_validation_schema_from_description_update_no_deep(stubbed_db_api, project_description):
-    validation_schema = stubbed_db_api.get_validation_schema_from_description(
+def test_get_validation_schema_update_no_deep(stubbed_db_api, project_description):
+    validation_schema = stubbed_db_api.get_validation_schema(
         project_description,
         is_update=True,
         deep_update=False
@@ -193,6 +193,7 @@ def test_get_validation_schema_from_description_update_no_deep(stubbed_db_api, p
         }
     }
 
+
 def test__convert_python_types(stubbed_db_api):
     # Basic test, datetime.
     expected = {
@@ -215,7 +216,7 @@ def test__convert_python_types(stubbed_db_api):
     expected[u"client"] = {
         u"id": 2,
         u"name": u"Awesome client.",
-        u"creation": datetime.date(year=1991, month=01, day=12)
+        u"creation": datetime.date(year=1991, month=1, day=12)
     }
 
     stubbed_db_api._convert_python_types([expected])
