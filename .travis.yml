@@ -20,7 +20,6 @@ deploy:
   on:
     branch: master
     tags: true
-    all_branches: true
 services:
   - postgresql
 env:
