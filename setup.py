@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name=u'db-api',
-    version=u'0.2.0',
+    version=u'0.2.1',
     packages=[
         u'dbapi', 
         u'dbapi.adapter'
