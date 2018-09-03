@@ -10,7 +10,6 @@ install:
 script:
   - nohup python3 test_app.py &
   - python3 -m pytest tests
-before_deploy: pip install twine --user
 deploy:
   provider: pypi
   user: sqlcollection
